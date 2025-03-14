@@ -182,6 +182,6 @@ class Wallet:
         tx = token.functions.approve(spender, amount).build_transaction(tx_data)
 
         status = self.send_tx(tx, tx_label=f"{self.label} Approve {amount / 10 ** decimals:.6f} {symbol}")
-        time.sleep(random.randint(5, 10))
+        time.sleep(random.randint(10, 15))
 
         return status
