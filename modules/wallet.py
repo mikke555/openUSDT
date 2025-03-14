@@ -171,11 +171,11 @@ class Wallet:
         allowance = self.check_allowance(token_address, spender)
 
         if balance == 0:
-            logger.info(f"{self.label} | Your {symbol} balance is 0")
+            logger.info(f"{self.label} Your {symbol} balance is 0")
             return
 
         if allowance >= balance:
-            logger.warning(f"{self.label} | {balance / 10 ** decimals:.6f} {symbol} Already approved")
+            logger.warning(f"{self.label} {balance / 10 ** decimals:.6f} {symbol} Already approved")
             return
 
         tx_data = self.get_tx_data()
