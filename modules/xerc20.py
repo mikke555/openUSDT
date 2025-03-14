@@ -61,6 +61,7 @@ class HypXERC20(Wallet):
         status = self.send_tx(
             contract_tx,
             tx_label=f"{self.label} Bridge {amount_in / 10**decimals:.6f} {symbol} {src_chain.title()} -> {dest_chain.title()}",
+            gas_multiplier=1.2,
         )
 
         if not status:
