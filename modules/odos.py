@@ -77,6 +77,7 @@ class Odos(Wallet):
         return self.send_tx(
             tx,
             tx_label=f"{self.label} Swap {ether(amount_in):.6f} ETH -> {quote['netOutValue']:.6f} oUSDT",
+            gas_multiplier=1.2,
         )
 
     def swap_erc20(self, token_in: str = OUSDT, token_out: str = constants.ADDRESS_ZERO):
@@ -98,4 +99,5 @@ class Odos(Wallet):
         return self.send_tx(
             tx,
             tx_label=f"{self.label} Swap {amount_in / 10**decimals:.6f} {symbol} -> ETH",
+            gas_multiplier=1.2,
         )
