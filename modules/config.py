@@ -57,7 +57,7 @@ lisk = Network(
 unichain = Network(
     name="unichain",
     rpc_url="https://mainnet.unichain.org",
-    explorer="https://blockscout.lisk.com",
+    explorer="https://uniscan.xyz",
     eip_1559=True,
     native_token="ETH",
 )
