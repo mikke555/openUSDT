@@ -86,12 +86,7 @@ class Odos(Wallet):
         quote = self._quote(token_in, token_out, amount_in)
         transaction = self._assemble(quote["pathId"])["transaction"]
 
-        self.approve(
-            token_in,
-            transaction["to"],
-            amount_in,
-            tx_label=f"{self.label} Approve {amount_in / 10 ** decimals:.6f} {symbol}",
-        )
+        self.approve(token_in, transaction["to"], amount_in)
 
         tx = self.get_tx_data(
             value=amount_in,

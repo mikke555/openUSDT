@@ -164,24 +164,24 @@ class Wallet:
 
         return token.functions.allowance(self.address, spender).call()
 
-    def approve(self, token_address, spender, amount, tx_label):
+    def approve(self, token_address, spender, amount):
         token = self.get_contract(token_address)
 
         balance, decimals, symbol = self.get_token_info(token_address)
         allowance = self.check_allowance(token_address, spender)
 
         if balance == 0:
-            logger.info(f"{tx_label} | Your {symbol} balance is 0")
+            logger.info(f"{self.label} | Your {symbol} balance is 0")
             return
 
         if allowance >= balance:
-            logger.warning(f"{tx_label} | {balance / 10 ** decimals:.6f} {symbol} Already approved")
+            logger.warning(f"{self.label} | {balance / 10 ** decimals:.6f} {symbol} Already approved")
             return
 
         tx_data = self.get_tx_data()
         tx = token.functions.approve(spender, amount).build_transaction(tx_data)
 
-        status = self.send_tx(tx, tx_label)
+        status = self.send_tx(tx, tx_label=f"{self.label} Approve {amount / 10 ** decimals:.6f} {symbol}")
         time.sleep(random.randint(5, 10))
 
         return status

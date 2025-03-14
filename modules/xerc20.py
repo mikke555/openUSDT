@@ -49,12 +49,7 @@ class HypXERC20(Wallet):
         value = self._quote_gas(dest_id)
         recipient = self._encode_recipient()
 
-        self.approve(
-            token_in,
-            self.router.address,
-            amount_in,
-            tx_label=f"{self.label} Approve {amount_in / 10**decimals:.6f} {symbol}",
-        )
+        self.approve(token_in, self.router.address, amount_in)
 
         contract_tx = self.router.functions.transferRemote(dest_id, recipient, balance).build_transaction(
             self.get_tx_data(value=value)
