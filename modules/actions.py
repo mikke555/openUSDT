@@ -10,29 +10,31 @@ from .xerc20 import HypXERC20
 
 def swap_and_bridge(account):
     hops = random.randint(*settings.HOPS)
+    current_chain = random.choice(settings.STARTING_CHAIN)
 
-    # Initial swap on optimism
-    if not swap_to_ousdt(account):
+    # Perform initial swap on base or optimism
+    if not swap_eth(account, chain=current_chain):
         return False
-
     random_sleep(*settings.SLEEP_BETWEEN_ACTIONS)
-
-    current_chain = "optimism"  # Start on optimism
 
     # Perform hops - 1 random transfers
     for _ in range(hops - 1):
         next_dest = transfer_remote(account, chain=current_chain)
+        if not next_dest:
+            return False
         current_chain = next_dest
         random_sleep(*settings.SLEEP_BETWEEN_ACTIONS)
 
-    # Final hop back to optimism if not already there
-    if current_chain != "optimism":
-        next_dest = transfer_remote(account, chain=current_chain, dest_name="optimism")
-        if not next_dest:
-            return False
+    # Perform the final transfer to base or optimism
+    last_dest = random.choice(["base", "optimism"])
+    next_dest = transfer_remote(account, chain=current_chain, dest_name=last_dest)
+    if not next_dest:
+        return False
+    current_chain = next_dest  # Update to the final chain
+    random_sleep(*settings.SLEEP_BETWEEN_ACTIONS)
 
-    # Swap back to ETH on optimism
-    if not swap_to_eth(account):
+    # Perform the final swap back to ETH on the current chain
+    if not swap_erc20(account, chain=current_chain):
         return False
 
     return True
@@ -52,11 +54,11 @@ def transfer_remote(account, chain, dest_name=None):
     return dest_name
 
 
-def swap_to_ousdt(account):
-    dex = Velodrome(**account) if random.randint(0, 1) else Odos(**account)
+def swap_eth(account, chain="optimism"):
+    dex = Velodrome(**account, chain=chain) if random.randint(0, 1) else Odos(**account, chain=chain)
     return dex.swap_eth()
 
 
-def swap_to_eth(account):
-    dex = Velodrome(**account) if random.randint(0, 1) else Odos(**account)
+def swap_erc20(account, chain="optimism"):
+    dex = Velodrome(**account, chain=chain) if random.randint(0, 1) else Odos(**account, chain=chain)
     return dex.swap_erc20()

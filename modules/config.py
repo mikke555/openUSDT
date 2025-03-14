@@ -63,7 +63,7 @@ unichain = Network(
 )
 
 mode = Network(
-    name="unichain",
+    name="mode",
     rpc_url="https://mainnet.mode.network",
     explorer="https://explorer.mode.network",
     eip_1559=True,
@@ -97,9 +97,16 @@ with open("abi/ERC20.json") as f:
 
 # ========================= Velodrome Finance ========================= #
 
+QUOTER = {
+    "optimism": "0x89D8218ed5fF1e46d8dcd33fb0bbeE3be1621466",
+    "base": "0x0A5aA5D3a4d28014f967Bf0f29EAA3FF9807D5c6",
+}
 
-QUOTER_V2 = "0x89D8218ed5fF1e46d8dcd33fb0bbeE3be1621466"
-ROUTER = "0x4bF3E32de155359D1D75e8B474b66848221142fc"
+ROUTER = {
+    "optimism": "0x4bF3E32de155359D1D75e8B474b66848221142fc",
+    "base": "0x6Cb442acF35158D5eDa88fe602221b67B400Be3E",
+}
+
 
 with open("abi/velodrome/QuoterV2.json") as f:
     QUOTER_ABI = json.load(f)

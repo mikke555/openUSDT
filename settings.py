@@ -15,4 +15,5 @@ SLEEP_BETWEEN_ACTIONS = [10, 20]
 SWAP_AMOUNT = [0.00054, 0.0011]  # 1- 2$
 SWAP_BACK_PERCENTAGE = [1, 1]  # 1 = 100%
 
-HOPS = [2, 4]  # 2-4 bridges
+STARTING_CHAIN = ["base", "optimism"]  # optimism | base
+HOPS = [3, 5]  # 2-4 bridges

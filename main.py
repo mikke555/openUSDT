@@ -12,8 +12,8 @@ from modules.utils import read_file, sleep
 def get_action() -> str:
     choices = [
         Choice("Swap and bridge oUSDT", swap_and_bridge),
-        Choice("Swap ETH -> oUSDT", swap_to_ousdt),
-        Choice("Swap oUSDT -> ETH", swap_to_eth),
+        Choice("Swap ETH -> oUSDT", swap_eth),
+        Choice("Swap oUSDT -> ETH", swap_erc20),
         Choice("Quit", "quit"),
     ]
 

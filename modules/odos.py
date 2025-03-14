@@ -10,8 +10,8 @@ from modules.wallet import Wallet
 
 
 class Odos(Wallet):
-    def __init__(self, pk, _id, proxy):
-        super().__init__(pk, _id)
+    def __init__(self, pk, _id, proxy, chain):
+        super().__init__(pk, _id, chain)
         self.label += "Odos |"
         self.http = HttpClient(proxy=proxy, base_url="https://api.odos.xyz")
 

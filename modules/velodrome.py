@@ -4,7 +4,7 @@ from eth_abi import encode
 from eth_utils import to_bytes
 
 import settings
-from modules.config import OUSDT, QUOTER_ABI, QUOTER_V2, ROUTER, ROUTER_ABI, WETH
+from modules.config import OUSDT, QUOTER, QUOTER_ABI, ROUTER, ROUTER_ABI, WETH
 from modules.logger import logger
 from modules.utils import ether, wei
 from modules.wallet import Wallet
@@ -14,11 +14,12 @@ FEE_BIPS = 100  # 0.01% fee tier | bip = 1/10000
 
 
 class Velodrome(Wallet):
-    def __init__(self, pk, _id, proxy):
-        super().__init__(pk, _id)
-        self.label += "Velodrome |"
-        self.quoter = self.get_contract(QUOTER_V2, abi=QUOTER_ABI)
-        self.router = self.get_contract(ROUTER, abi=ROUTER_ABI)
+    def __init__(self, pk, _id, proxy, chain):
+        super().__init__(pk, _id, chain)
+
+        self.label += "Aerodrome |" if self.chain.name == "base" else "Velodrome |"
+        self.quoter = self.get_contract(QUOTER[self.chain.name], abi=QUOTER_ABI)
+        self.router = self.get_contract(ROUTER[self.chain.name], abi=ROUTER_ABI)
 
     def _get_amount_out(self, path: bytes, amount_in: int, slippage: int = 1) -> int:
         """
@@ -38,6 +39,7 @@ class Velodrome(Wallet):
             Example output:
                 [1512879, [1728150856839541183868667626044367], [1], 139086]
         """
+
         amount_out = self.quoter.functions.quoteExactInput(path, amount_in).call()[0]
         min_amount_out = int(amount_out * (1 - slippage / 100))
 
