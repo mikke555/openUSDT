@@ -175,13 +175,13 @@ class Wallet:
             return
 
         if allowance >= balance:
-            logger.warning(f"{self.label} {balance / 10 ** decimals:.6f} {symbol} Already approved")
+            logger.warning(f"{self.label} {balance / 10 ** decimals:.4f} {symbol} Already approved")
             return
 
         tx_data = self.get_tx_data()
         tx = token.functions.approve(spender, amount).build_transaction(tx_data)
 
-        status = self.send_tx(tx, tx_label=f"{self.label} Approve {amount / 10 ** decimals:.6f} {symbol}")
+        status = self.send_tx(tx, tx_label=f"{self.label} Approve {amount / 10 ** decimals:.4f} {symbol}")
         time.sleep(random.randint(10, 15))
 
         return status

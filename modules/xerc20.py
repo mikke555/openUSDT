@@ -2,6 +2,7 @@ import random
 
 from eth_abi import encode
 
+import settings
 from modules.config import HYPERLANE_DOMAINS, HYPERLANE_ROUTER, OUSDT, XERC20_ABI
 from modules.logger import logger
 from modules.wallet import Wallet
@@ -10,7 +11,6 @@ from modules.wallet import Wallet
 class HypXERC20(Wallet):
     def __init__(self, pk, _id, proxy, chain):
         super().__init__(pk, _id, chain)
-
         self.label += "OpenUSDT |"
         self.router = self.get_contract(HYPERLANE_ROUTER[self.chain.name], abi=XERC20_ABI)
 
@@ -18,12 +18,22 @@ class HypXERC20(Wallet):
     def local_domain(self) -> int:
         return self.router.functions.localDomain().call()
 
-    def get_dest_id_by_name(self, name: str) -> int:
-        return HYPERLANE_DOMAINS.get(name.lower())
-
     def get_random_dest(self) -> tuple:
-        domains = {k: v for k, v in HYPERLANE_DOMAINS.items() if v != self.local_domain}
-        return random.choice(list(domains.items()))
+        """Select a random destination from AVAILABLE_CHAINS, excluding current chain."""
+
+        available_destinations = {
+            chain_name: chain_id
+            for chain_name, chain_id in HYPERLANE_DOMAINS.items()
+            if chain_name in settings.AVAILABLE_CHAINS and chain_id != self.local_domain
+        }
+
+        if not available_destinations:
+            raise ValueError("No available destination chains")
+
+        return random.choice(list(available_destinations.items()))
+
+    def get_dest_id_by_name(self, dest_name: str) -> int:
+        return HYPERLANE_DOMAINS.get(dest_name.lower())
 
     def _quote_gas(self, dest_id: int) -> int:
         return self.router.functions.quoteGasPayment(dest_id).call()
@@ -60,7 +70,7 @@ class HypXERC20(Wallet):
 
         status = self.send_tx(
             contract_tx,
-            tx_label=f"{self.label} Bridge {amount_in / 10**decimals:.6f} {symbol} {src_chain.title()} -> {dest_chain.title()}",
+            tx_label=f"{self.label} Bridge {amount_in / 10**decimals:.4f} {symbol} {src_chain.title()} -> {dest_chain.title()}",
             gas_multiplier=1.2,
         )
 

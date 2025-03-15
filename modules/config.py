@@ -1,6 +1,19 @@
 import json
 
+import questionary
+
 from models.network import Network
+
+q_style = questionary.Style(
+    [
+        ("qmark", "fg:#47A6F9 bold"),
+        ("pointer", "fg:#47A6F9 bold"),
+        ("selected", "fg:#47A6F9"),
+        ("highlighted", "fg:#808080"),
+        ("answer", "fg:#808080"),
+        ("instruction", "fg:#808080 italic"),
+    ]
+)
 
 #######################################################################
 #                             Network Config                          #
@@ -132,6 +145,6 @@ HYPERLANE_DOMAINS = {
     "base": 8453,
     "lisk": 1135,
     "soneium": 1868,
-    # "unichain": 130,
-    # "mode": 34443,
+    "unichain": 130,
+    "mode": 34443,
 }

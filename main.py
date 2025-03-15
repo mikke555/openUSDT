@@ -4,37 +4,27 @@ import questionary
 from questionary import Choice
 
 import settings
-from modules.actions import *
+from modules.actions import ActionHandler
+from modules.config import q_style
 from modules.logger import logger
-from modules.utils import read_file, sleep
+from modules.utils import handle_errors, read_file, sleep
 
 
-def get_action() -> str:
+def get_action():
     choices = [
-        Choice("Swap and bridge oUSDT", swap_and_bridge),
-        Choice("Swap ETH -> oUSDT", swap_eth),
-        Choice("Swap oUSDT -> ETH", swap_erc20),
+        Choice("Swap and bridge oUSDT", "swap_and_bridge"),
+        Choice("Swap ETH > oUSDT", "swap_eth_to_ousdt"),
+        Choice("Swap oUSDT > ETH", "swap_ousdt_to_eth"),
         Choice("Quit", "quit"),
     ]
-
-    custom_style = questionary.Style(
-        [
-            ("qmark", "fg:#47A6F9 bold"),
-            ("pointer", "fg:#47A6F9 bold"),
-            ("selected", "fg:#47A6F9"),
-            ("highlighted", "fg:#808080"),
-            ("answer", "fg:#808080 bold"),
-            ("instruction", "fg:#8c8c8c italic"),
-        ]
-    )
 
     action = questionary.select(
         "Action",
         choices=choices,
-        style=custom_style,
+        style=q_style,
     ).ask()
 
-    if action == "quit" or action == None:
+    if action == "quit" or action is None:
         quit()
 
     return action
@@ -53,11 +43,7 @@ def get_accounts() -> list[dict]:
         quit()
 
     accounts = [
-        {
-            "pk": key,
-            "_id": None,  # To be set after shuffling
-            "proxy": proxies[index % len(proxies)] if settings.USE_PROXY else None,
-        }
+        {"pk": key, "proxy": proxies[index % len(proxies)] if settings.USE_PROXY else None}
         for index, key in enumerate(keys)
     ]
 
@@ -70,12 +56,16 @@ def get_accounts() -> list[dict]:
     return accounts
 
 
+@handle_errors
 def run(action, account):
-    try:
-        return action(account)
+    handler = ActionHandler(account)
 
-    except Exception as err:
-        logger.error(f"Error: {err}")
+    if action == "swap_and_bridge":
+        return handler.swap_and_bridge()
+    elif action == "swap_eth_to_ousdt":
+        return handler.swap_eth_to_ousdt()
+    elif action == "swap_ousdt_to_eth":
+        return handler.swap_ousdt_to_eth()
 
 
 def main():

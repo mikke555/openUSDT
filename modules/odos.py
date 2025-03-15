@@ -5,19 +5,20 @@ from web3 import constants
 import settings
 from modules.config import OUSDT
 from modules.http import HttpClient
-from modules.utils import ether, wei
+from modules.utils import ether, retry, wei
 from modules.wallet import Wallet
 
 
 class Odos(Wallet):
     def __init__(self, pk, _id, proxy, chain):
         super().__init__(pk, _id, chain)
-        self.label += "Odos |"
+        self.label += "ODOS |"
         self.http = HttpClient(proxy=proxy, base_url="https://api.odos.xyz")
 
+    @retry(retries=3, delay=10)
     def _quote(self, token_in, token_out, amount_in):
         payload = {
-            "chainId": 10,
+            "chainId": self.w3.eth.chain_id,
             "inputTokens": [
                 {
                     "tokenAddress": token_in,
@@ -76,7 +77,7 @@ class Odos(Wallet):
 
         return self.send_tx(
             tx,
-            tx_label=f"{self.label} Swap {ether(amount_in):.6f} ETH -> {quote['netOutValue']:.6f} oUSDT",
+            tx_label=f"{self.label} Swap {ether(amount_in):.6f} ETH -> {quote['netOutValue']:.4f} oUSDT",
             gas_multiplier=1.2,
         )
 
@@ -96,8 +97,9 @@ class Odos(Wallet):
             get_gas=True,
         )
 
+        amount_out = quote["pathViz"]["links"][-1]["out_value"]
         return self.send_tx(
             tx,
-            tx_label=f"{self.label} Swap {amount_in / 10**decimals:.6f} {symbol} -> ETH",
+            tx_label=f"{self.label} Swap {amount_in / 10**decimals:.4f} {symbol} -> {amount_out:.6f} ETH",
             gas_multiplier=1.2,
         )

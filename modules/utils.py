@@ -4,16 +4,44 @@ import random
 import time
 from datetime import datetime
 from decimal import Decimal
+from functools import wraps
 
 import requests
 from tqdm import tqdm
 from web3 import Web3
 
-from modules.config import HYPERLANE_DOMAINS
+from modules.logger import logger
 
 
-def get_chain_by_id(_id: int) -> str:
-    return [name for name, id in HYPERLANE_DOMAINS.items() if id == _id][0]
+def retry(retries=3, delay=5):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            last_error = None
+            for attempt in range(retries):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    last_error = e
+                    logger.info(f"Attempt {attempt + 1} failed in {func.__name__}: {e}")
+                    if attempt < retries - 1:
+                        time.sleep(delay)
+            raise last_error
+
+        return wrapper
+
+    return decorator
+
+
+def handle_errors(func):
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as err:
+            logger.error(f"Error: {err}")
+            return False
+
+    return wrapper
 
 
 def get_random_token(tokens: list[str]) -> str:

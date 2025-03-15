@@ -70,7 +70,7 @@ class Velodrome(Wallet):
             [self.address, amount_in, amount_out, path, False],
         )
 
-        return commands["WRAP_SWAP"], [wrap_params, swap_params], amount_in
+        return commands["WRAP_SWAP"], [wrap_params, swap_params], amount_in, amount_out
 
     def _build_erc20_swap(self, amount_in: int, token_in: str, token_out: str):
         """oUSDT → WETH → ETH swap construction"""
@@ -86,19 +86,19 @@ class Velodrome(Wallet):
         # # 2. Unwrap parameters
         unwrap_params = encode(["address", "uint256"], [self.address, amount_out])
 
-        return commands["SWAP_UNWRAP"], [swap_params, unwrap_params], 0
+        return commands["SWAP_UNWRAP"], [swap_params, unwrap_params], 0, amount_out
 
     def swap_eth(self, token_in: str = WETH, token_out: str = OUSDT):
         amount_in = wei(random.uniform(*settings.SWAP_AMOUNT))
-        token_out_symbol = self.get_token_info(token_out, as_dict=True)["symbol"]
+        _, decimals, symbol = self.get_token_info(token_out)
 
-        commands, inputs, value = self._build_eth_swap(amount_in, token_in, token_out)
+        commands, inputs, value, amount_out = self._build_eth_swap(amount_in, token_in, token_out)
 
         contract_tx = self.router.functions.execute(commands, inputs).build_transaction(self.get_tx_data(value=value))
 
         return self.send_tx(
             contract_tx,
-            tx_label=f"{self.label} Swap {ether(amount_in):.6f} ETH -> {token_out_symbol}",
+            tx_label=f"{self.label} Swap {ether(amount_in):.6f} ETH -> {amount_out / 10**decimals:.4f} {symbol}",
             gas_multiplier=1.1,
         )
 
@@ -110,7 +110,7 @@ class Velodrome(Wallet):
             logger.warning(f"{self.label} No {symbol} tokens to swap \n")
             return
 
-        commands, inputs, value = self._build_erc20_swap(amount_in, token_in, token_out)
+        commands, inputs, value, amount_out = self._build_erc20_swap(amount_in, token_in, token_out)
 
         self.approve(token_in, self.router.address, amount_in)
 
@@ -118,6 +118,6 @@ class Velodrome(Wallet):
 
         return self.send_tx(
             contract_tx,
-            tx_label=f"{self.label} Swap {amount_in / 10**decimals:.8f} {symbol} -> ETH",
+            tx_label=f"{self.label} Swap {amount_in / 10**decimals:.4f} {symbol} -> {ether(amount_out):.6f} ETH",
             gas_multiplier=1.2,
         )
