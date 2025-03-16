@@ -4,20 +4,19 @@ import questionary
 from questionary import Choice
 
 import settings
-from modules.actions import ActionHandler
+from modules.actions import Action
 from modules.config import q_style
 from modules.logger import logger
-from modules.utils import handle_errors, read_file, sleep
+from modules.utils import read_file, sleep
 
 
-def get_action():
+def get_action() -> Action:
     choices = [
-        Choice("Swap and bridge oUSDT", "swap_and_bridge"),
-        Choice("Swap ETH > oUSDT", "swap_eth_to_ousdt"),
-        Choice("Swap oUSDT > ETH", "swap_ousdt_to_eth"),
+        Choice("Swap and bridge oUSDT", Action("swap_and_bridge")),
+        Choice("Swap ETH > oUSDT", Action("swap_eth_to_ousdt")),
+        Choice("Swap oUSDT > ETH", Action("swap_ousdt_to_eth")),
         Choice("Quit", "quit"),
     ]
-
     action = questionary.select(
         "Action",
         choices=choices,
@@ -35,12 +34,9 @@ def get_accounts() -> list[dict]:
     proxies = read_file("proxies.txt", prefix="http://")
 
     if not keys:
-        logger.warning("keys.txt is empty")
-        quit()
-
+        logger.warning("keys.txt is empty") and quit()
     if not proxies and settings.USE_PROXY:
-        logger.warning("proxies.txt is empty")
-        quit()
+        logger.warning("proxies.txt is empty") and quit()
 
     accounts = [
         {"pk": key, "proxy": proxies[index % len(proxies)] if settings.USE_PROXY else None}
@@ -56,24 +52,12 @@ def get_accounts() -> list[dict]:
     return accounts
 
 
-@handle_errors
-def run(action, account):
-    handler = ActionHandler(account)
-
-    if action == "swap_and_bridge":
-        return handler.swap_and_bridge()
-    elif action == "swap_eth_to_ousdt":
-        return handler.swap_eth_to_ousdt()
-    elif action == "swap_ousdt_to_eth":
-        return handler.swap_ousdt_to_eth()
-
-
 def main():
     action = get_action()
     accounts = get_accounts()
 
     for index, account in enumerate(accounts, start=1):
-        tx_status = run(action, account)
+        tx_status = action(account)
 
         if tx_status and index < len(accounts):
             sleep(*settings.SLEEP_BETWEEN_WALLETS)
@@ -84,3 +68,5 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt:
         logger.warning("Cancelled by user")
+    except Exception as e:
+        logger.error(f"An unexpected error occurred: {e}")

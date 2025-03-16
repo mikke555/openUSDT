@@ -12,6 +12,20 @@ from .velodrome import Velodrome
 from .xerc20 import HypXERC20
 
 
+class Action:
+    def __init__(self, method_name: str):
+        self.method_name = method_name
+
+    def __call__(self, account: dict) -> bool:
+        handler = ActionHandler(account)
+        method = getattr(handler, self.method_name, None)
+
+        if method is None:
+            raise AttributeError(f"No such method: {self.method_name}")
+
+        return method()
+
+
 class ActionHandler:
     def __init__(self, account):
         self.account = account
