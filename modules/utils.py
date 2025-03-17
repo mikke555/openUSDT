@@ -90,8 +90,7 @@ def sleep(sleep_time, to_sleep=None, label="Sleeping", new_line=True):
     for _ in tqdm(range(x), desc=desc, bar_format=f"{{desc}} | {label} {{n_fmt}}/{{total_fmt}}"):
         time.sleep(1)
 
-    if new_line:
-        print()  # new line break
+    new_line and print()
 
 
 def write_to_csv(path, headers, data):

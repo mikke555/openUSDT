@@ -1,6 +1,8 @@
 import requests
 from fake_useragent import UserAgent
 
+from modules.utils import retry
+
 
 class HttpClient(requests.Session):
     def __init__(self, base_url="", proxy=None):
@@ -12,12 +14,14 @@ class HttpClient(requests.Session):
         if proxy:
             self.proxies.update({"http": proxy, "https": proxy})
 
-    def __exit__(self):
-        self.close()
-
+    @retry(retries=3, delay=10)
     def _request(self, method, endpoint, *args, **kwargs):
         url = f"{self.base_url}{endpoint}"
-        return super().request(method, url, *args, **kwargs)
+        resp = super().request(method, url, *args, **kwargs)
+
+        if resp.status_code not in [200, 201]:
+            raise Exception(f"{resp.status_code} {resp.text}")
+        return resp
 
     def get(self, endpoint, *args, **kwargs):
         return self._request("GET", endpoint, *args, **kwargs)

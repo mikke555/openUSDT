@@ -13,17 +13,13 @@ from modules.config import CHAIN_MAPPING, ERC20_ABI
 from modules.logger import logger
 
 
-def get_chain_by_name(name: str) -> Network:
-    return CHAIN_MAPPING.get(name.lower())
-
-
 class Wallet:
     def __init__(self, pk: str, _id: str = None, chain: str = "optimism"):
         self.account = Account.from_key(pk)
         self.address = self.account.address
         self.label = f"{_id} {self.address} | "
 
-        self.chain: Network = get_chain_by_name(chain)
+        self.chain: Network = self.get_chain_by_name(chain)
         self.w3 = self.get_web3(chain)
 
     def __str__(self) -> str:
@@ -33,8 +29,11 @@ class Wallet:
     def tx_count(self):
         return self.w3.eth.get_transaction_count(self.address)
 
+    def get_chain_by_name(self, name: str) -> Network:
+        return CHAIN_MAPPING.get(name.lower())
+
     def get_web3(self, chain_name: str) -> Web3:
-        chain: Network = get_chain_by_name(chain_name)
+        chain: Network = self.get_chain_by_name(chain_name)
         web3 = Web3(HTTPProvider(chain.rpc_url))
         web3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
 
@@ -61,7 +60,7 @@ class Wallet:
 
         return balance, decimals, symbol
 
-    def get_balance(self, token_address: str = None, chain_name: str = None) -> int:
+    def get_balance(self, token_address: str = None, chain_name: str = None, human=False) -> int:
         w3: Web3 = self.get_web3(chain_name) if chain_name else self.w3
 
         if token_address == None:
@@ -70,7 +69,11 @@ class Wallet:
             token = self.get_contract(token_address, chain_name=chain_name)
             balance = token.functions.balanceOf(self.address).call()
 
-        return balance
+        if not human:
+            return balance
+
+        decimals = token.functions.decimals().call() if token_address else 18
+        return balance / 10**decimals
 
     def await_token_balance(self, token_address: str, chain_name: str = None) -> bool:
         original_balance, decimals, symbol = self.get_token_info(token_address, chain_name)
@@ -137,7 +140,7 @@ class Wallet:
 
             if tx_receipt.status:
                 logger.success(f"{tx_label} [{self.tx_count}] | Tx confirmed \n")
-                return tx_receipt.status
+                return tx_hash.hex()
             else:
                 raise Web3Exception(f"Tx Failed \n")
 

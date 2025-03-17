@@ -24,6 +24,7 @@ ethereum = Network(
     rpc_url="https://rpc.ankr.com/eth",
     explorer="https://etherscan.io",
     eip_1559=True,
+    chain_id=1,
     native_token="ETH",
 )
 
@@ -32,6 +33,7 @@ linea = Network(
     rpc_url="https://rpc.linea.build",
     explorer="https://lineascan.build",
     eip_1559=True,
+    chain_id=59144,
     native_token="ETH",
 )
 
@@ -40,6 +42,7 @@ optimism = Network(
     rpc_url="https://rpc.ankr.com/optimism",
     explorer="https://optimistic.etherscan.io",
     eip_1559=True,
+    chain_id=10,
     native_token="ETH",
 )
 
@@ -48,6 +51,7 @@ base = Network(
     rpc_url="https://mainnet.base.org",
     explorer="https://basescan.org",
     eip_1559=True,
+    chain_id=8453,
     native_token="ETH",
 )
 
@@ -56,6 +60,7 @@ soneium = Network(
     rpc_url="https://rpc.soneium.org",
     explorer="https://soneium.blockscout.com",
     eip_1559=True,
+    chain_id=1868,
     native_token="ETH",
 )
 
@@ -64,6 +69,7 @@ lisk = Network(
     rpc_url="https://rpc.api.lisk.com",
     explorer="https://blockscout.lisk.com",
     eip_1559=True,
+    chain_id=1135,
     native_token="ETH",
 )
 
@@ -72,6 +78,7 @@ unichain = Network(
     rpc_url="https://mainnet.unichain.org",
     explorer="https://uniscan.xyz",
     eip_1559=True,
+    chain_id=130,
     native_token="ETH",
 )
 
@@ -80,6 +87,7 @@ mode = Network(
     rpc_url="https://mainnet.mode.network",
     explorer="https://explorer.mode.network",
     eip_1559=True,
+    chain_id=34443,
     native_token="ETH",
 )
 
@@ -97,6 +105,8 @@ CHAIN_MAPPING = {
 #######################################################################
 #                             Smart Contracts                         #
 #######################################################################
+
+GASZIP_DIRECT_DEPOSIT_ADDRESS = "0x391E7C679d29bD940d63be94AD22A25d25b5A604"
 
 OUSDT = "0x1217BfE6c773EEC6cc4A38b5Dc45B92292B6E189"
 WETH = "0x4200000000000000000000000000000000000006"

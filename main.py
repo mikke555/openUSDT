@@ -69,4 +69,4 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         logger.warning("Cancelled by user")
     except Exception as e:
-        logger.error(f"An unexpected error occurred: {e}")
+        logger.error(f"An error occurred: {e}")

@@ -20,17 +20,15 @@ class HypXERC20(Wallet):
 
     def get_random_dest(self) -> tuple:
         """Select a random destination from AVAILABLE_CHAINS, excluding current chain."""
-
-        available_destinations = {
-            chain_name: chain_id
-            for chain_name, chain_id in HYPERLANE_DOMAINS.items()
-            if chain_name in settings.AVAILABLE_CHAINS and chain_id != self.local_domain
-        }
-
+        available_destinations = [
+            (name, id)
+            for name, id in HYPERLANE_DOMAINS.items()
+            if name in settings.AVAILABLE_CHAINS and id != self.local_domain
+        ]
         if not available_destinations:
             raise ValueError("No available destination chains")
 
-        return random.choice(list(available_destinations.items()))
+        return random.choice(available_destinations)[0]
 
     def get_dest_id_by_name(self, dest_name: str) -> int:
         return HYPERLANE_DOMAINS.get(dest_name.lower())

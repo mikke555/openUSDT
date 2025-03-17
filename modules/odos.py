@@ -5,17 +5,18 @@ from web3 import constants
 import settings
 from modules.config import OUSDT
 from modules.http import HttpClient
-from modules.utils import ether, retry, wei
+from modules.utils import ether, wei
 from modules.wallet import Wallet
 
 
 class Odos(Wallet):
+    BASE_URL = "https://api.odos.xyz"
+
     def __init__(self, pk, _id, proxy, chain):
         super().__init__(pk, _id, chain)
         self.label += "ODOS |"
-        self.http = HttpClient(proxy=proxy, base_url="https://api.odos.xyz")
+        self.http = HttpClient(self.BASE_URL, proxy)
 
-    @retry(retries=3, delay=10)
     def _quote(self, token_in, token_out, amount_in):
         payload = {
             "chainId": self.w3.eth.chain_id,
@@ -32,7 +33,7 @@ class Odos(Wallet):
                 },
             ],
             "userAddr": self.address,
-            "slippageLimitPercent": 0.5,
+            "slippageLimitPercent": 1,
             "sourceBlacklist": [],
             "pathViz": True,
             "referralCode": 1,
