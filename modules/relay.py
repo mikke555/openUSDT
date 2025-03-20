@@ -64,7 +64,7 @@ class Relay(Wallet):
 
         raise Exception(f"Deposit not confirmed after {max_attempts} attempts")
 
-    def _get_request_info(self, id: str, max_attempts: int = 10) -> None:
+    def _get_receipt(self, id: str, max_attempts: int = 10) -> None:
         endpoint = f"/requests/v2?id={id}"
 
         for _ in range(max_attempts):
@@ -106,7 +106,7 @@ class Relay(Wallet):
 
         if tx_status:
             self._verify_deposit(quote.steps[0].requestId)
-            self._get_request_info(quote.steps[0].requestId)
+            self._get_receipt(quote.steps[0].requestId)
             return True
 
         return False
