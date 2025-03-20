@@ -32,6 +32,9 @@ class Wallet:
     def get_chain_by_name(self, name: str) -> Network:
         return CHAIN_MAPPING.get(name.lower())
 
+    def get_chain_name_by_id(self, chain_id: int) -> str:
+        return [network.name for network in CHAIN_MAPPING.values() if network.chain_id == chain_id][0]
+
     def get_web3(self, chain_name: str) -> Web3:
         chain: Network = self.get_chain_by_name(chain_name)
         web3 = Web3(HTTPProvider(chain.rpc_url))
@@ -78,34 +81,29 @@ class Wallet:
     def await_token_balance(self, token_address: str, chain_name: str = None) -> bool:
         original_balance, decimals, symbol = self.get_token_info(token_address, chain_name)
         new_balance = self.get_balance(token_address, chain_name)
-        logger.info(f"{self.label} Waiting for updated {symbol} balance on {chain_name.title()}")
+        logger.info(f"{self.label} Awaiting {symbol} deposit")
 
         while new_balance <= original_balance:
             time.sleep(15)
             new_balance = self.get_balance(token_address, chain_name)
 
-        logger.debug(
-            f"{self.label} Got new balance of {new_balance / 10**decimals:.6f} {symbol} on {chain_name.title()}\n"
-        )
+        logger.debug(f"{self.label} {new_balance / 10**decimals:.4f} {symbol} received on {chain_name.title()}\n")
         return True
 
     def get_gas(self, tx: dict) -> dict:
-        gas_price_legacy = self.w3.eth.gas_price
-        max_priority_fee = self.w3.eth.max_priority_fee
-        latest_block = self.w3.eth.get_block("latest")
-        base_fee = int(max(gas_price_legacy, latest_block["baseFeePerGas"]))
-
-        max_fee_per_gas = max_priority_fee + base_fee
-
         if self.chain.eip_1559:
+            latest_block = self.w3.eth.get_block("latest")
+            base_fee = latest_block["baseFeePerGas"]
+            max_priority_fee = self.w3.eth.max_priority_fee
+            max_fee_per_gas = max_priority_fee + base_fee
+
             tx["maxFeePerGas"] = max_fee_per_gas
             tx["maxPriorityFeePerGas"] = max_priority_fee
 
         else:
-            tx["gasPrice"] = gas_price_legacy
+            tx["gasPrice"] = self.w3.eth.gas_price
 
         tx["gas"] = self.w3.eth.estimate_gas(tx)
-
         return tx
 
     def get_tx_data(self, value=0, get_gas=False, **kwargs):
@@ -128,9 +126,10 @@ class Wallet:
     def sign_tx(self, tx):
         return self.w3.eth.account.sign_transaction(tx, self.account.key)
 
-    def send_tx(self, tx, tx_label="", gas_multiplier=1.0):
+    def send_tx(self, tx, tx_label="", gas_multiplier: float | None = None):
         try:
-            tx["gas"] = int(tx["gas"] * gas_multiplier)
+            if gas_multiplier:
+                tx["gas"] = int(tx["gas"] * gas_multiplier)
 
             signed_tx = self.sign_tx(tx)
             tx_hash = self.w3.eth.send_raw_transaction(signed_tx.raw_transaction)

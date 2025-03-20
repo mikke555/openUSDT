@@ -1,8 +1,7 @@
-from dataclasses import dataclass
+from pydantic import BaseModel
 
 
-@dataclass
-class Network:
+class Network(BaseModel):
     name: str
     rpc_url: str
     explorer: str

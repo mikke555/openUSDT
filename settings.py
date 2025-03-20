@@ -15,11 +15,8 @@ SLEEP_BETWEEN_ACTIONS = [20, 120]
 SWAP_AMOUNT = [0.001, 0.002]
 SWAP_BACK_PERCENTAGE = [1, 1]  # 1 = 100%
 
-STARTING_CHAIN = ["base", "optimism"]  # optimism | base
+STARTING_CHAINS = ["base", "optimism"]  # optimism | base
 AVAILABLE_CHAINS = ["optimism", "base", "lisk", "soneium", "unichain", "mode"]
+HOPS = [4, 5]  # 4-5 bridges
 
-MIN_GAS_BALANCE = 0.00016  # $.30
-GASZIP_REFUEL_SOURCE = ["base", "optimism"]
-GASZIP_REFUEL_AMOUNT = [0.00055, 0.00105]
-
-HOPS = [5, 6]  # 4-5 bridges
+REFUEL_AMOUNT = [0.00025, 0.00045]

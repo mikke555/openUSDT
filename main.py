@@ -15,6 +15,8 @@ def get_action() -> Action:
         Choice("Swap and bridge oUSDT", Action("swap_and_bridge")),
         Choice("Swap ETH > oUSDT", Action("swap_eth_to_ousdt")),
         Choice("Swap oUSDT > ETH", Action("swap_ousdt_to_eth")),
+        Choice("Bridge to selected chain", Action("prompt_and_bridge")),
+        Choice("Refuel to selected chain", Action("refuel")),
         Choice("Quit", "quit"),
     ]
     action = questionary.select(

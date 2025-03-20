@@ -2,6 +2,7 @@ import random
 import time
 
 import settings
+from models.network import Network
 from modules.config import GASZIP_DIRECT_DEPOSIT_ADDRESS
 from modules.http import HttpClient
 from modules.logger import logger
@@ -12,16 +13,19 @@ from modules.wallet import Wallet
 class GasZip(Wallet):
     BASE_URL = "https://backend.gas.zip/v2"
 
-    def __init__(self, pk, _id, proxy, chain):
+    def __init__(self, pk, _id, proxy, chain, dest_chain):
         super().__init__(pk, _id, chain)
         self.label += "Gas.zip |"
         self.http = HttpClient(self.BASE_URL, proxy)
 
-    @property
-    def amount(self):
-        return random.uniform(*settings.GASZIP_REFUEL_AMOUNT)
+        self.src_chain: Network = self.chain
+        self.dest_chain: str = dest_chain
 
-    def _validate_amount(self):
+    @property
+    def amount(self) -> float:
+        return random.uniform(*settings.REFUEL_AMOUNT)
+
+    def _validate_amount(self) -> int:
         eth_price = get_token_price("ETH")
         amount_usd = self.amount * eth_price
 
@@ -30,41 +34,41 @@ class GasZip(Wallet):
 
         return wei(self.amount)
 
-    def _get_quote(self, amount, dest_chain_id):
-        resp = self.http.get(
-            f"/quotes/{self.chain.chain_id}/{amount}/{dest_chain_id}",
-            params={"to": self.address, "from": self.address},
-        )
-
-        if resp.status_code != 200:
-            raise Exception(f"Failed to fetch quote: {resp.status_code} {resp.text}")
+    def _quote(self, amount: int, dest_chain_id: int) -> dict:
+        url = f"/quotes/{self.chain.chain_id}/{amount}/{dest_chain_id}"
+        resp = self.http.get(url, params={"to": self.address, "from": self.address})
 
         return resp.json()
 
-    def _verify_deposit(self, tx_hash):
-        url = f"/deposit/0x{tx_hash}"
+    def _verify_deposit(self, tx_hash: str, max_attempts: int = 10) -> bool | None:
+        endpoint = f"/deposit/0x{tx_hash}"
+        logger.info(f"{self.label} {self.http.base_url}{endpoint}")
 
-        while True:
-            data = self.http.get(url).json()
+        for attempt in range(max_attempts):
+            data = self.http.get(endpoint).json()
+
             if "deposit" in data and "status" in data["deposit"]:
-                break
+                status = data["deposit"]["status"]
+
+                if status == "CONFIRMED":
+                    logger.debug(f"{self.label} Status <{status.upper()}>")
+                    logger.debug(
+                        f"{self.label} ${data['deposit']['usd']:.2f} in ETH received on {self.dest_chain.title()} \n"
+                    )
+                    return True
+                else:
+                    logger.info(f"{self.label} Status <{status.upper()}>")
             time.sleep(5)
 
-        for _ in range(5):
-            data = self.http.get(url).json()
+        raise Exception(f"Deposit not confirmed after {max_attempts} attempts")
 
-            if data["deposit"]["status"] == "CONFIRMED":
-                logger.debug(f"{self.label} ${data['deposit']['usd']:.2f} of gas received \n")
-                return
-            time.sleep(5)
+    def refuel(self):
+        if self.src_chain is None or self.dest_chain is None:
+            quit()
 
-        logger.warning(f"{self.label} Deposit status: <{data['deposit']['status']}>")
-        raise Exception("Deposit not confirmed after 5 attempts")
-
-    def refuel(self, dest_name: str):
-        to_chain = self.get_chain_by_name(dest_name)
         amount = self._validate_amount()
-        quote = self._get_quote(amount, to_chain.chain_id)
+        to_chain = self.get_chain_by_name(self.dest_chain)
+        quote = self._quote(amount, to_chain.chain_id)
 
         tx = self.get_tx_data(
             value=amount,

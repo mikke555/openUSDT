@@ -21,6 +21,7 @@ class HttpClient(requests.Session):
 
         if resp.status_code not in [200, 201]:
             raise Exception(f"{resp.status_code} {resp.text}")
+
         return resp
 
     def get(self, endpoint, *args, **kwargs):
