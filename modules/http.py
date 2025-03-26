@@ -1,7 +1,8 @@
 import requests
 from fake_useragent import UserAgent
-
-from modules.utils import retry
+from requests.adapters import HTTPAdapter
+from requests.exceptions import HTTPError
+from urllib3.util.retry import Retry
 
 
 class HttpClient(requests.Session):
@@ -14,13 +15,22 @@ class HttpClient(requests.Session):
         if proxy:
             self.proxies.update({"http": proxy, "https": proxy})
 
-    @retry(retries=3, delay=10)
+        retry_strategy = Retry(
+            total=5,
+            status_forcelist=[502, 503, 504],
+            backoff_factor=1,
+        )
+
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        self.mount("https://", adapter)
+        self.mount("http://", adapter)
+
     def _request(self, method, endpoint, *args, **kwargs):
         url = f"{self.base_url}{endpoint}"
         resp = super().request(method, url, *args, **kwargs)
 
         if resp.status_code not in [200, 201]:
-            raise Exception(f"{resp.status_code} {resp.text}")
+            raise HTTPError(f"{resp.status_code} {resp.reason}")
 
         return resp
 

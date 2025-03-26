@@ -4,44 +4,10 @@ import random
 import time
 from datetime import datetime
 from decimal import Decimal
-from functools import wraps
 
 import requests
 from tqdm import tqdm
 from web3 import Web3
-
-from modules.logger import logger
-
-
-def retry(retries=3, delay=5):
-    def decorator(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            last_error = None
-            for attempt in range(retries):
-                try:
-                    return func(*args, **kwargs)
-                except Exception as e:
-                    last_error = e
-                    logger.info(f"Attempt {attempt + 1} failed in {func.__name__}: {e}")
-                    if attempt < retries - 1:
-                        time.sleep(delay)
-            raise last_error
-
-        return wrapper
-
-    return decorator
-
-
-def handle_errors(func):
-    def wrapper(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except Exception as err:
-            logger.error(f"Error: {err}")
-            return False
-
-    return wrapper
 
 
 def get_random_token(tokens: list[str]) -> str:
@@ -71,7 +37,7 @@ def read_file(path: str, prefix: str = ""):
     return rows
 
 
-def random_sleep(max_time, min_time=1):
+def random_sleep(max_time: int, min_time: int = 1) -> None:
     if min_time > max_time:
         min_time, max_time = max_time, min_time
 
@@ -79,21 +45,16 @@ def random_sleep(max_time, min_time=1):
     time.sleep(x)
 
 
-def sleep(sleep_time, to_sleep=None, label="Sleeping", new_line=True):
-    if to_sleep is not None:
-        x = random.randint(sleep_time, to_sleep)
-    else:
-        x = sleep_time
-
+def sleep(from_sleep: int, to_sleep: int) -> None:
+    x = random.randint(from_sleep, to_sleep)
     desc = datetime.now().strftime("%H:%M:%S")
 
-    for _ in tqdm(range(x), desc=desc, bar_format=f"{{desc}} | {label} {{n_fmt}}/{{total_fmt}}"):
+    for _ in tqdm(range(x), desc=desc, bar_format="{desc} | Sleeping {n_fmt}/{total_fmt}"):
         time.sleep(1)
+    print()
 
-    new_line and print()
 
-
-def write_to_csv(path, headers, data):
+def write_to_csv(path: str, headers: list, data: list) -> None:
     directory = os.path.dirname(path)
 
     if directory:
