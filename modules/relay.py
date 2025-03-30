@@ -1,6 +1,6 @@
 import random
-import time
 
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed
 from web3 import constants
 
 import settings
@@ -10,6 +10,14 @@ from modules.http import HttpClient
 from modules.logger import logger
 from modules.utils import wei
 from modules.wallet import Wallet
+
+
+class PendingStatus(Exception):
+    pass
+
+
+class ReceiptNotAvailable(Exception):
+    pass
 
 
 class Relay(Wallet):
@@ -45,39 +53,48 @@ class Relay(Wallet):
         resp = self.http.post("/quote", json=payload)
         return Quote(**resp.json())
 
-    def _verify_deposit(self, request_id: str, max_attempts: int = 10) -> None:
+    def _verify_deposit(self, request_id: str) -> None:
         endpoint = f"/intents/status?requestId={request_id}"
         logger.info(f"{self.label} {self.http.base_url}{endpoint}")
+        try:
+            self._check_deposit_status(endpoint)
+        except PendingStatus:
+            raise Exception(f"Deposit not confirmed after max attempts")
 
-        for _ in range(max_attempts):
-            resp = self.http.get(endpoint)
-            data = resp.json()
+    @retry(stop=stop_after_attempt(10), wait=wait_fixed(10), retry=retry_if_exception_type(PendingStatus))
+    def _check_deposit_status(self, endpoint):
+        resp = self.http.get(endpoint)
+        data = resp.json()
 
-            if "status" in data:
-                status = data["status"]
-                if status == "success":
-                    logger.debug(f"{self.label} Status <{status.upper()}>")
-                    return
-                else:
-                    logger.info(f"{self.label} Status <{status.upper()}>")
-            time.sleep(10)
+        if "status" in data:
+            status = data["status"]
 
-        raise Exception(f"Deposit not confirmed after {max_attempts} attempts")
-
-    def _get_receipt(self, id: str, max_attempts: int = 10) -> None:
-        endpoint = f"/requests/v2?id={id}"
-
-        for _ in range(max_attempts):
-            resp = self.http.get(endpoint)
-            data = resp.json()
-
-            if "requests" in data:
-                amount_usd = float(data["requests"][0]["data"]["metadata"]["currencyOut"]["amountUsd"])
-                logger.debug(f"{self.label} ${amount_usd:.2f} in ETH received on {self.dest_chain.title()}\n")
+            if data["status"] == "success":
+                logger.debug(f"{self.label} Status <{status.upper()}>")
                 return
-            time.sleep(10)
+            else:
+                logger.info(f"{self.label} Status <{status.upper()}>")
+                raise PendingStatus(f"Status is {status}")
 
-        raise Exception(f"Couldn't get a receipt after {max_attempts} attempts")
+    def _get_receipt(self, id: str) -> None:
+        endpoint = f"/requests/v2?id={id}"
+        try:
+            self._check_receipt(endpoint)
+        except ReceiptNotAvailable:
+            raise Exception(f"Couldn't get a receipt after max attempts")
+
+    @retry(stop=stop_after_attempt(10), wait=wait_fixed(10), retry=retry_if_exception_type(ReceiptNotAvailable))
+    def _check_receipt(self, endpoint):
+        resp = self.http.get(endpoint)
+        data = resp.json()
+
+        if "requests" in data:
+            amount_usd = float(data["requests"][0]["data"]["metadata"]["currencyOut"]["amountUsd"])
+            logger.debug(f"{self.label} ${amount_usd:.2f} in ETH received on {self.dest_chain.title()}\n")
+            return
+        else:
+            logger.info(f"{self.label} Receipt not available yet")
+            raise ReceiptNotAvailable("Receipt not available")
 
     def refuel(self) -> bool:
         to_chain = self.get_chain_by_name(self.dest_chain)

@@ -1,5 +1,6 @@
 import random
-import time
+
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed
 
 import settings
 from models.network import Network
@@ -8,6 +9,10 @@ from modules.http import HttpClient
 from modules.logger import logger
 from modules.utils import get_token_price, wei
 from modules.wallet import Wallet
+
+
+class PendingStatus(Exception):
+    pass
 
 
 class GasZip(Wallet):
@@ -40,27 +45,32 @@ class GasZip(Wallet):
 
         return resp.json()
 
-    def _verify_deposit(self, tx_hash: str, max_attempts: int = 10) -> bool | None:
+    def _verify_deposit(self, tx_hash: str) -> bool:
         endpoint = f"/deposit/0x{tx_hash}"
         logger.info(f"{self.label} {self.http.base_url}{endpoint}")
 
-        for attempt in range(max_attempts):
-            data = self.http.get(endpoint).json()
+        try:
+            return self._check_deposit_status(endpoint)
+        except PendingStatus:
+            raise Exception("Deposit not confirmed after max attempts")
 
-            if "deposit" in data and "status" in data["deposit"]:
-                status = data["deposit"]["status"]
+    @retry(stop=stop_after_attempt(10), wait=wait_fixed(5), retry=retry_if_exception_type(PendingStatus))
+    def _check_deposit_status(self, endpoint):
+        data = self.http.get(endpoint).json()
 
-                if status == "CONFIRMED":
-                    logger.debug(f"{self.label} Status <{status.upper()}>")
-                    logger.debug(
-                        f"{self.label} ${data['deposit']['usd']:.2f} in ETH received on {self.dest_chain.title()} \n"
-                    )
-                    return True
-                else:
-                    logger.info(f"{self.label} Status <{status.upper()}>")
-            time.sleep(5)
+        if "deposit" in data and "status" in data["deposit"]:
+            status = data["deposit"]["status"]
+            usd_value = data["deposit"]["usd"]
 
-        raise Exception(f"Deposit not confirmed after {max_attempts} attempts")
+            if status == "CONFIRMED":
+                logger.debug(f"{self.label} Status <CONFIRMED>")
+                logger.debug(f"{self.label} ${usd_value:.2f} in ETH received on {self.dest_chain.title()} \n")
+                return True
+            else:
+                logger.info(f"{self.label} Status <{status.upper()}>")
+                raise PendingStatus(f"Status is {status}")
+        else:
+            raise PendingStatus("Response does not contain 'deposit' or 'status'")
 
     def refuel(self):
         if self.src_chain is None or self.dest_chain is None:
