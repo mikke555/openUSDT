@@ -1,5 +1,11 @@
 import random
 
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 from web3 import constants
 
 import settings
@@ -7,6 +13,10 @@ from modules.config import OUSDT
 from modules.http import HttpClient
 from modules.utils import ether, wei
 from modules.wallet import Wallet
+
+
+class OdosQuoteError(Exception):
+    pass
 
 
 class Odos(Wallet):
@@ -17,6 +27,11 @@ class Odos(Wallet):
         self.label += "ODOS |"
         self.http = HttpClient(self.BASE_URL, proxy)
 
+    @retry(
+        stop=stop_after_attempt(10),
+        wait=wait_exponential(multiplier=1, max=60),
+        retry=retry_if_exception_type(OdosQuoteError),
+    )
     def _quote(self, token_in, token_out, amount_in):
         payload = {
             "chainId": self.w3.eth.chain_id,
@@ -44,10 +59,12 @@ class Odos(Wallet):
 
         resp = self.http.post("/sor/quote/v2", json=payload)
 
-        if resp.status_code != 200:
+        if resp.status_code == 200:
+            return resp.json()
+        elif resp.status_code == 500 and "Error getting quote" in resp.text:
+            raise OdosQuoteError(f"Error getting quote: {resp.status_code} {resp.text}")
+        else:
             raise Exception(f"Failed to fetch quote: {resp.status_code} {resp.text}")
-
-        return resp.json()
 
     def _assemble(self, path_id):
         payload = {

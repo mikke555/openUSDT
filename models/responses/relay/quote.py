@@ -239,7 +239,7 @@ class Details(BaseModel):
     swapImpact: SwapImpact
     rate: str
     slippageTolerance: SlippageTolerance
-    timeEstimate: int
+    timeEstimate: int | float
     userBalance: str
 
 

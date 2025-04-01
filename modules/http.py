@@ -29,8 +29,8 @@ class HttpClient(requests.Session):
         url = f"{self.base_url}{endpoint}"
         resp = super().request(method, url, *args, **kwargs)
 
-        if resp.status_code not in [200, 201]:
-            raise HTTPError(f"{resp.status_code} {resp.reason}")
+        if resp.status_code not in [200, 201, 500]:
+            raise HTTPError(f"{resp.status_code} {resp.text}")
 
         return resp
 
