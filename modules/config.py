@@ -39,7 +39,7 @@ linea = Network(
 
 optimism = Network(
     name="optimism",
-    rpc_url="https://rpc.ankr.com/optimism",
+    rpc_url="https://mainnet.optimism.io",
     explorer="https://optimistic.etherscan.io",
     eip_1559=True,
     chain_id=10,
@@ -91,6 +91,15 @@ mode = Network(
     native_token="ETH",
 )
 
+superseed = Network(
+    name="superseed",
+    rpc_url="https://mainnet.superseed.xyz",
+    explorer="https://explorer.superseed.xyz",
+    eip_1559=True,
+    chain_id=5330,
+    native_token="ETH",
+)
+
 CHAIN_MAPPING = {
     "ethereum": ethereum,
     "linea": linea,
@@ -100,6 +109,7 @@ CHAIN_MAPPING = {
     "lisk": lisk,
     "unichain": unichain,
     "mode": mode,
+    "superseed": superseed,
 }
 
 #######################################################################
@@ -148,6 +158,7 @@ HYPERLANE_ROUTER = {
     "soneium": "0x2dC335bDF489f8e978477Ae53924324697e0f7BB",
     "unichain": "0x4A8149B1b9e0122941A69D01D23EaE6bD1441b4f",
     "mode": "0x324d0b921C03b1e42eeFD198086A64beC3d736c2",
+    "superseed": "0x5beADE696E12aBE2839FEfB41c7EE6DA1f074C55",
 }
 
 HYPERLANE_DOMAINS = {
@@ -157,4 +168,5 @@ HYPERLANE_DOMAINS = {
     "soneium": 1868,
     "unichain": 130,
     "mode": 34443,
+    "superseed": 5330,
 }
